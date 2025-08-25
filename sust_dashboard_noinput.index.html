@@ -1,0 +1,970 @@
+""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEL20 IRO & ESG Analytics Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --kpmg-dark-blue: #00338D;
+            --kpmg-blue: #005EB8;
+            --kpmg-light-blue: #77C5F7;
+            --kpmg-gray: #666666;
+            --kpmg-light-gray: #E7EFFB;
+            --kpmg-green: #00cc66;
+            --kpmg-red: #cc0000;
+            --kpmg-orange: #ff9900;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+           font-family: 'Arial', sans-serif;
+		   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+		   min-height: 100vh;
+		   color: #333;
+		   padding-left: 1rem;
+		   padding-right: 1rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--kpmg-dark-blue) 0%, var(--kpmg-blue) 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 3px dashed var(--kpmg-dark-blue);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: var(--kpmg-blue);
+            transform: translateY(-2px);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-button {
+            background: linear-gradient(135deg, var(--kpmg-blue) 0%, var(--kpmg-dark-blue) 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,51,141,0.3);
+        }
+
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            min-width: 150px;
+        }
+
+        .control-item label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--kpmg-dark-blue);
+        }
+
+        .control-item select, .control-item button {
+            padding: 0.7rem;
+            border: 2px solid var(--kpmg-light-blue);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .control-item select:focus {
+            outline: none;
+            border-color: var(--kpmg-blue);
+        }
+
+        .btn {
+            background: var(--kpmg-blue);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--kpmg-dark-blue);
+            transform: translateY(-1px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--kpmg-dark-blue);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .chart-canvas {
+            width: 100% !important;
+            height: 400px !important;
+        }
+
+        .summary-table {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th {
+            background: var(--kpmg-dark-blue);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background: var(--kpmg-light-gray);
+        }
+
+        .table tbody tr:hover {
+            background: #f0f8ff;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: var(--kpmg-blue);
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .status-message {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--kpmg-blue) 0%, var(--kpmg-dark-blue) 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-group {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>BEL20 IRO & ESG Analytics Dashboard</h1>
+        
+    </div>
+
+    <div class="container">
+        <!-- File Upload Section -->
+        <!-- <div class="upload-section">
+            <h2 style="margin-bottom: 1rem; color: var(--kpmg-dark-blue);">Upload BEL20 Data</h2>
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls" />
+                <button class="file-input-button">Choose Excel File</button>
+            </div>
+            <p style="margin-top: 1rem; color: var(--kpmg-gray);"></p>
+        </div>-->
+
+        <!-- Status Messages -->
+        <div id="statusMessage"></div>
+        <div id="loading" class="loading">
+            <p>Processing data... Please wait</p>
+        </div>
+
+        <!-- Controls -->
+        <div id="controls" class="controls" style="display: none;">
+            <div class="control-group">
+                <div class="control-item">
+                    <label for="analysisType">Analysis Type</label>
+                    <select id="analysisType">
+                        <option value="iro-overview">IRO Overview</option>
+                        <option value="iro-valuechain">Value Chain Analysis</option>
+                    </select>
+                </div>
+                <div class="control-item">
+                    <label for="sectorFilter">Filter by Sector</label>
+                    <select id="sectorFilter">
+                        <option value="all">All Sectors</option>
+                    </select>
+                </div>
+                <!--iv class="control-item">
+                    <button class="btn" onclick="updateDashboard()">Update Analysis</button>
+                </div>
+                <div class="control-item">-->
+                    <button class="btn" onclick="exportData()" style="background: var(--kpmg-green);">Export Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div id="metricsSection" style="display: none;">
+            <div class="metrics-grid" id="metricsGrid"></div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" style="display: none;">
+            <div class="dashboard-grid">
+                <div class="chart-container">
+                    <div class="chart-title" id="chart1Title">Analysis Chart 1</div>
+                    <canvas id="chart1" class="chart-canvas"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title" id="chart2Title">Analysis Chart 2</div>
+                    <canvas id="chart2" class="chart-canvas"></canvas>
+                </div>
+            </div>
+            <div class="dashboard-grid">
+                <div class="chart-container full-width">
+                    <div class="chart-title" id="chart3Title">Detailed Analysis</div>
+                    <canvas id="chart3" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Tables -->
+        <div id="summarySection" style="display: none;">
+            <div class="summary-table">
+                <h3 style="color: var(--kpmg-dark-blue); margin-bottom: 1rem;">Company Summary</h3>
+                <div id="summaryTableContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let data = {};
+        let charts = {};
+        
+        // File input handling
+		loadDataFromGitHub();
+
+		function loadDataFromGitHub() {
+			showLoading(true);
+			// showStatus('Loading data from GitHub...', 'info');  // <-- commented out
+
+			const githubURL = 'https://raw.githubusercontent.com/AMKotlar/BEL20/4dfc50698ce30cc913ca65e4bc1d350006cc2fb0/BEL20-data.xlsx';
+
+			fetch(githubURL)
+				.then(res => {
+					if (!res.ok) throw new Error('Network response was not ok');
+					return res.arrayBuffer();
+				})
+				.then(arrayBuffer => {
+					const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+					// Read sheets
+					const iroSheet = workbook.Sheets['II. IROs'];
+					const otherSheet = workbook.Sheets['III. Others'];
+
+					if (!iroSheet || !otherSheet) {
+						throw new Error('Required sheets not found. Please ensure your file contains "II. IROs" and "III. Others" sheets.');
+					}
+
+					data.iroData = XLSX.utils.sheet_to_json(iroSheet);
+					data.otherData = XLSX.utils.sheet_to_json(otherSheet);
+
+					processData();
+					initializeDashboard();
+					// showStatus('Data loaded successfully from GitHub! Ready for analysis.', 'success');
+				})
+				.catch(error => {
+					// showStatus('Error loading file: ' + error.message, 'error');
+				})
+				.finally(() => {
+					showLoading(false);
+				});
+		}
+
+
+		document.getElementById('analysisType').addEventListener('change', updateDashboard);
+		document.getElementById('sectorFilter').addEventListener('change', updateDashboard);
+        
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            showLoading(true);
+            showStatus('Processing file...', 'info');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const workbook = XLSX.read(e.target.result, {type: 'binary'});
+                    
+                    // Read sheets
+                    const iroSheet = workbook.Sheets['II. IROs'];
+                    const otherSheet = workbook.Sheets['III. Others'];
+                    
+                    if (!iroSheet || !otherSheet) {
+                        throw new Error('Required sheets not found. Please ensure your file contains "II. IROs" and "III. Others" sheets.');
+                    }
+                    
+                    data.iroData = XLSX.utils.sheet_to_json(iroSheet);
+                    data.otherData = XLSX.utils.sheet_to_json(otherSheet);
+                    
+                    processData();
+                    initializeDashboard();
+                    showStatus('Data loaded successfully! Ready for analysis.', 'success');
+                    
+                } catch (error) {
+                    showStatus('Error processing file: ' + error.message, 'error');
+                } finally {
+                    showLoading(false);
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+        
+        function processData() {
+            // Process IRO data
+            data.processedIRO = data.iroData.map(row => {
+                let iroCategory = 'Unspecified';
+                if (row['Risk Type']) iroCategory = 'Risk';
+                else if (row['Opportunity Type']) iroCategory = 'Opportunity';
+                else if (row['pos/neg impact']) iroCategory = 'Impact';
+                
+                // Process Value Chain
+                let vcCategory = 'Unspecified';
+                if (row['VC location']) {
+                    const vcLoc = row['VC location'].toString().toLowerCase().trim();
+                    if (vcLoc.includes('downstream')) vcCategory = 'Downstream';
+                    else if (vcLoc.includes('upstream')) vcCategory = 'Upstream';
+                    else if (vcLoc.includes('own')) vcCategory = 'Own Operations';
+                }
+                
+                // Process Time Horizon
+                let timeCategory = 'Unspecified';
+                if (row['Time horizon']) {
+                    const timeHorizon = row['Time horizon'].toString().toLowerCase().trim();
+                    if (timeHorizon.includes('short')) timeCategory = 'Short-term';
+                    else if (timeHorizon.includes('medium')) timeCategory = 'Medium-term';
+                    else if (timeHorizon.includes('long')) timeCategory = 'Long-term';
+                }
+                
+                return {
+                    ...row,
+                    iroCategory: iroCategory,
+                    vcCategory: vcCategory,
+                    timeCategory: timeCategory,
+                    topic: (row['Topic-ESRS Reference'] || '').toString().trim().toUpperCase()
+                };
+            }).filter(row => row['IRO Text'] && row['Topic-ESRS Reference']);
+            
+            // Process other data (companies, sectors)
+            data.companies = data.otherData.slice(0, 21);
+            
+            // Merge sector info
+            const sectorMap = {};
+            data.companies.forEach(company => {
+                sectorMap[company.Company] = company.Sector;
+            });
+            
+            data.processedIRO.forEach(iro => {
+                iro.Sector = sectorMap[iro.Company];
+            });
+            
+            // Get unique sectors for filter
+            const sectors = [...new Set(data.companies.map(c => c.Sector).filter(s => s))];
+            populateSectorFilter(sectors);
+        }
+        
+        function populateSectorFilter(sectors) {
+            const sectorSelect = document.getElementById('sectorFilter');
+            sectorSelect.innerHTML = '<option value="all">All Sectors</option>';
+            sectors.forEach(sector => {
+                const option = document.createElement('option');
+                option.value = sector;
+                option.textContent = sector;
+                sectorSelect.appendChild(option);
+            });
+        }
+        
+        function initializeDashboard() {
+            document.getElementById('controls').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('metricsSection').style.display = 'block';
+            document.getElementById('summarySection').style.display = 'block';
+            
+            updateDashboard();
+        }
+        
+        function updateDashboard() {
+            const analysisType = document.getElementById('analysisType').value;
+			const sectorFilter = document.getElementById('sectorFilter').value;
+
+			// Clear existing charts
+			Object.values(charts).forEach(chart => chart.destroy());
+			charts = {};
+
+			updateMetrics(sectorFilter);
+
+			// Hide or show chart3 container
+			const chart3Container = document.getElementById('chart3').parentElement.parentElement; // full-width container
+			if (analysisType === 'iro-valuechain') {
+				chart3Container.style.display = 'none';  // hide chart3
+			} else {
+				chart3Container.style.display = 'block'; // show chart3 for IRO Overview
+			}
+
+			switch(analysisType) {
+				case 'iro-overview':
+					createIROOverview(sectorFilter);
+					break;
+				case 'iro-valuechain':
+					createValueChainAnalysis(sectorFilter);
+					break;
+			}
+
+			updateSummaryTable(sectorFilter);
+		}
+        
+        function updateMetrics(sectorFilter) {
+            let filteredIRO = data.processedIRO;
+            let filteredCompanies = data.companies;
+            
+            if (sectorFilter !== 'all') {
+                filteredIRO = data.processedIRO.filter(iro => iro.Sector === sectorFilter);
+                filteredCompanies = data.companies.filter(c => c.Sector === sectorFilter);
+            }
+            
+            const metricsGrid = document.getElementById('metricsGrid');
+            const totalCompanies = filteredCompanies.length;
+            const totalIROs = filteredIRO.length;
+            const sectorsCount = sectorFilter === 'all' ? 
+                new Set(data.companies.map(c => c.Sector).filter(s => s)).size : 1;
+            const avgIROsPerCompany = totalCompanies > 0 ? Math.round(totalIROs / totalCompanies) : 0;
+            
+            metricsGrid.innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-value">${totalCompanies}</div>
+                    <div class="metric-label">Companies Analyzed</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${totalIROs}</div>
+                    <div class="metric-label">Total IROs</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${sectorsCount}</div>
+                    <div class="metric-label">Sectors</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${avgIROsPerCompany}</div>
+                    <div class="metric-label">Avg IROs/Company</div>
+                </div>
+            `;
+        }
+        
+        function createIROOverview(sectorFilter) {
+            let filteredData = data.processedIRO;
+            if (sectorFilter !== 'all') {
+                filteredData = data.processedIRO.filter(iro => iro.Sector === sectorFilter);
+            }
+            
+            document.getElementById('chart1Title').textContent = 'IRO Categories Distribution';
+            document.getElementById('chart2Title').textContent = 'IROs by ESRS Topic';
+            document.getElementById('chart3Title').textContent = 'IRO Categories by ESRS Topic';
+            
+            // Chart 1: IRO Categories pie chart
+            const iroCategories = {};
+            filteredData.forEach(iro => {
+                iroCategories[iro.iroCategory] = (iroCategories[iro.iroCategory] || 0) + 1;
+            });
+            
+            charts.chart1 = new Chart(document.getElementById('chart1'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(iroCategories),
+                    datasets: [{
+                        data: Object.values(iroCategories),
+                        backgroundColor: ['#00338D', '#005EB8', '#77C5F7', '#666666'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Chart 2: IROs by topic (filtered)
+            const topicCounts = {};
+            filteredData.forEach(iro => {
+                topicCounts[iro.topic] = (topicCounts[iro.topic] || 0) + 1;
+            });
+            
+            charts.chart2 = new Chart(document.getElementById('chart2'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(topicCounts),
+                    datasets: [{
+                        label: 'Number of IROs',
+                        data: Object.values(topicCounts),
+                        backgroundColor: '#005EB8',
+                        borderColor: '#00338D',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Chart 3: Stacked bar for categories by topic (filtered)
+            const topicCategoryData = {};
+            filteredData.forEach(iro => {
+                if (!topicCategoryData[iro.topic]) {
+                    topicCategoryData[iro.topic] = {};
+                }
+                topicCategoryData[iro.topic][iro.iroCategory] = 
+                    (topicCategoryData[iro.topic][iro.iroCategory] || 0) + 1;
+            });
+            
+            const categories = ['Impact', 'Risk', 'Opportunity', 'Unspecified'];
+            const topics = Object.keys(topicCategoryData);
+            
+            charts.chart3 = new Chart(document.getElementById('chart3'), {
+                type: 'bar',
+                data: {
+                    labels: topics,
+                    datasets: categories.map((category, index) => ({
+                        label: category,
+                        data: topics.map(topic => topicCategoryData[topic][category] || 0),
+                        backgroundColor: ['#00338D', '#005EB8', '#77C5F7', '#666666'][index],
+                        borderWidth: 1
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createValueChainAnalysis(sectorFilter) {
+            let filteredData = data.processedIRO;
+            if (sectorFilter !== 'all') {
+                filteredData = data.processedIRO.filter(iro => iro.Sector === sectorFilter);
+            }
+            
+            document.getElementById('chart1Title').textContent = 'IRO Categories by Value Chain Position';
+            document.getElementById('chart2Title').textContent = 'IRO Categories by Time Horizon';
+            
+            // Chart 1: Value Chain with IRO categories stacked
+            const vcCategories = ['Downstream', 'Own Operations', 'Upstream', 'Unspecified'];
+            const vcCategoryData = {};
+            
+            vcCategories.forEach(vc => {
+                vcCategoryData[vc] = {
+                    'Impact': 0,
+                    'Risk': 0,
+                    'Opportunity': 0
+                };
+            });
+            
+            filteredData.forEach(iro => {
+                if (vcCategoryData[iro.vcCategory]) {
+                    vcCategoryData[iro.vcCategory][iro.iroCategory]++;
+                }
+            });
+            
+            charts.chart1 = new Chart(document.getElementById('chart1'), {
+                type: 'bar',
+                data: {
+                    labels: vcCategories,
+                    datasets: [
+                        {
+                            label: 'Impact',
+                            data: vcCategories.map(vc => vcCategoryData[vc]['Impact']),
+                            backgroundColor: '#00338D',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Risk',
+                            data: vcCategories.map(vc => vcCategoryData[vc]['Risk']),
+                            backgroundColor: '#005EB8',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Opportunity',
+                            data: vcCategories.map(vc => vcCategoryData[vc]['Opportunity']),
+                            backgroundColor: '#77C5F7',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Chart 2: Time Horizon with IRO categories stacked
+            const timeCategories = ['Short-term', 'Medium-term', 'Long-term', 'Unspecified'];
+            const timeCategoryData = {};
+            
+            timeCategories.forEach(time => {
+                timeCategoryData[time] = {
+                    'Impact': 0,
+                    'Risk': 0,
+                    'Opportunity': 0
+                };
+            });
+            
+            filteredData.forEach(iro => {
+                if (timeCategoryData[iro.timeCategory]) {
+                    timeCategoryData[iro.timeCategory][iro.iroCategory]++;
+                }
+            });
+            
+            charts.chart2 = new Chart(document.getElementById('chart2'), {
+                type: 'bar',
+                data: {
+                    labels: timeCategories,
+                    datasets: [
+                        {
+                            label: 'Impact',
+                            data: timeCategories.map(time => timeCategoryData[time]['Impact']),
+                            backgroundColor: '#00338D',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Risk',
+                            data: timeCategories.map(time => timeCategoryData[time]['Risk']),
+                            backgroundColor: '#005EB8',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Opportunity',
+                            data: timeCategories.map(time => timeCategoryData[time]['Opportunity']),
+                            backgroundColor: '#77C5F7',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Chart 3: Overview pie charts
+            const vcTotals = {};
+            const timeTotals = {};
+            
+            filteredData.forEach(iro => {
+                vcTotals[iro.vcCategory] = (vcTotals[iro.vcCategory] || 0) + 1;
+                timeTotals[iro.timeCategory] = (timeTotals[iro.timeCategory] || 0) + 1;
+            });
+        }
+        
+        function updateSummaryTable(sectorFilter) {
+            let filteredCompanies = data.companies;
+            if (sectorFilter !== 'all') {
+                filteredCompanies = data.companies.filter(c => c.Sector === sectorFilter);
+            }
+            
+            const tableContainer = document.getElementById('summaryTableContainer');
+            
+            let tableHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Sector</th>
+                            <th>Total IROs</th>
+                            <th>Impacts</th>
+                            <th>Risks</th>
+                            <th>Opportunities</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            filteredCompanies.forEach(company => {
+                const companyIROs = data.processedIRO.filter(iro => iro.Company === company.Company);
+                const totalIROs = companyIROs.length;
+                const impactIROs = companyIROs.filter(iro => iro.iroCategory === 'Impact').length;
+                const riskIROs = companyIROs.filter(iro => iro.iroCategory === 'Risk').length;
+                const opportunityIROs = companyIROs.filter(iro => iro.iroCategory === 'Opportunity').length;
+                
+                tableHTML += `
+                    <tr>
+                        <td><strong>${company.Company || 'N/A'}</strong></td>
+                        <td>${company.Sector || 'N/A'}</td>
+                        <td>${totalIROs}</td>
+                        <td>${impactIROs}</td>
+                        <td>${riskIROs}</td>
+                        <td>${opportunityIROs}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            tableContainer.innerHTML = tableHTML;
+        }
+        
+        function exportData() {
+            const sectorFilter = document.getElementById('sectorFilter').value;
+            let filteredIRO = data.processedIRO;
+            let filteredCompanies = data.companies;
+            
+            if (sectorFilter !== 'all') {
+                filteredIRO = data.processedIRO.filter(iro => iro.Sector === sectorFilter);
+                filteredCompanies = data.companies.filter(c => c.Sector === sectorFilter);
+            }
+            
+            const exportData = {
+                companies: filteredCompanies,
+                iroAnalysis: filteredIRO,
+                summary: {
+                    totalCompanies: filteredCompanies.length,
+                    totalIROs: filteredIRO.length,
+                    sectors: sectorFilter === 'all' ? 
+                        [...new Set(data.companies.map(c => c.Sector).filter(s => s))] : [sectorFilter],
+                    exportDate: new Date().toISOString(),
+                    filterApplied: sectorFilter
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BEL20_IRO_Analysis_Export_${sectorFilter}_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showStatus('Data exported successfully!', 'success');
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+        
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+            
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    statusEl.innerHTML = '';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>" 
